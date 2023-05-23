@@ -82,7 +82,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         updates
                 .stream()
                 .map(Update::message)
-                .filter(message -> (isMessageMatchToPattern(message.text()) == true))
+                .filter(message -> (isMessageMatchToPattern(message.text())))
                 .forEach(message -> notificationTaskService.createNotificationTask(ParseMessageTextAndCreateNotificationTask(message)));
     }
 
@@ -94,10 +94,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private boolean isMessageMatchToPattern(String text) {
         Matcher matcher = PATTERN.matcher(text);
-        if (!matcher.matches()) {
-            return false;
-        }
-        return true;
+        return matcher.matches();
     }
 
     /*
@@ -109,6 +106,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private NotificationTask ParseMessageTextAndCreateNotificationTask(Message message) {
         String text = message.text();
         Matcher matcher = PATTERN.matcher(text);
+
         String date = null;
         String task = null;
         if (matcher.matches()) {
@@ -116,10 +114,12 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             task = matcher.group(3);
         }
         LocalDateTime localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+
         NotificationTask notificationTask = new NotificationTask();
         notificationTask.setNotificationDate(localDateTime);
         notificationTask.setText(task);
         notificationTask.setIdChat(message.chat().id());
+
         return notificationTask;
     }
 
@@ -130,8 +130,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     */
     @Scheduled(cron = "0 0/1 * * * *")
     private void executeNotificationTaskOnScheduledTime() {
-        if (!notificationTaskService
-                .getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)).isEmpty()) {
+        if (!notificationTaskService.getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)).isEmpty()) {
             notificationTaskService
                     .getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
                     .stream()

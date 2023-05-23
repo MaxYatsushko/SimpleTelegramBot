@@ -15,7 +15,6 @@ public class NotificationTaskService {
         this.notificationTaskRepository = notificationTaskRepository;
     }
 
-
     public NotificationTask createNotificationTask(NotificationTask notificationTask) {
         if (notificationTask ==null)
             throw new IllegalArgumentException("NotificationTask is null");
