@@ -65,9 +65,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 .map(update -> update.message())
                 .filter(message -> message.text().equals("/start"))
                 .map(message -> message.chat())
-                .map(chat -> chat.id())
                 .forEach(chat -> {
-                    SendMessage message = new SendMessage(chat, "You are welcome. I'm bot Gena. Write me!");
+                    SendMessage message = new SendMessage(chat.id(), "Добро пожаловать "  + chat.firstName() + ". Я бот Gena. Я вывожу запланированные задачи. Введите задачу в формате 'дд.мм.гггг чч:мм Текст задачи на русском'");
                     SendResponse response = telegramBot.execute(message);
                 });
     }
