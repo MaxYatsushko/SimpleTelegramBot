@@ -104,7 +104,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
        return NotificationTask - created object
     */
     private NotificationTask ParseMessageTextAndCreateNotificationTask(Message message) {
-        NotificationTask notificationTask = null;
+        LocalDateTime localDateTime = null;
         String text = message.text();
         Matcher matcher = PATTERN.matcher(text);
 
@@ -115,15 +115,17 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             task = matcher.group(3);
         }
         try {
-            LocalDateTime localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-            notificationTask = new NotificationTask();
-            notificationTask.setNotificationDate(localDateTime);
-            notificationTask.setText(task);
-            notificationTask.setIdChat(message.chat().id());
+            localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
         }
         catch (DateTimeParseException e){
             logger.error("Incorrect input date", message);
         }
+
+        NotificationTask notificationTask = new NotificationTask();
+        notificationTask.setNotificationDate(localDateTime);
+        notificationTask.setText(task);
+        notificationTask.setIdChat(message.chat().id());
+
         return notificationTask;
     }
 
