@@ -17,6 +17,7 @@ import pro.sky.telegrambot.service.NotificationTaskService;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -103,6 +104,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
        return NotificationTask - created object
     */
     private NotificationTask ParseMessageTextAndCreateNotificationTask(Message message) {
+        NotificationTask notificationTask = null;
         String text = message.text();
         Matcher matcher = PATTERN.matcher(text);
 
@@ -112,13 +114,16 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             date = matcher.group(1);
             task = matcher.group(3);
         }
-        LocalDateTime localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-
-        NotificationTask notificationTask = new NotificationTask();
-        notificationTask.setNotificationDate(localDateTime);
-        notificationTask.setText(task);
-        notificationTask.setIdChat(message.chat().id());
-
+        try {
+            LocalDateTime localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+            notificationTask = new NotificationTask();
+            notificationTask.setNotificationDate(localDateTime);
+            notificationTask.setText(task);
+            notificationTask.setIdChat(message.chat().id());
+        }
+        catch (DateTimeParseException e){
+            logger.error("Incorrect input date", message);
+        }
         return notificationTask;
     }
 
