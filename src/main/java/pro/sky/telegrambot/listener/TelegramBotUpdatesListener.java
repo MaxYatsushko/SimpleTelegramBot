@@ -17,6 +17,7 @@ import pro.sky.telegrambot.service.NotificationTaskService;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -65,9 +66,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 .map(update -> update.message())
                 .filter(message -> message.text().equals("/start"))
                 .map(message -> message.chat())
-                .map(chat -> chat.id())
                 .forEach(chat -> {
-                    SendMessage message = new SendMessage(chat, "You are welcome. I'm bot Gena. Write me!");
+                    SendMessage message = new SendMessage(chat.id(), "Добро пожаловать "  + chat.firstName() + ". Я бот Gena. Я вывожу запланированные задачи. Введите задачу в формате 'дд.мм.гггг чч:мм Текст задачи на русском'");
                     SendResponse response = telegramBot.execute(message);
                 });
     }
@@ -82,7 +82,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         updates
                 .stream()
                 .map(Update::message)
-                .filter(message -> (isMessageMatchToPattern(message.text()) == true))
+                .filter(message -> (isMessageMatchToPattern(message.text())))
                 .forEach(message -> notificationTaskService.createNotificationTask(ParseMessageTextAndCreateNotificationTask(message)));
     }
 
@@ -94,10 +94,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private boolean isMessageMatchToPattern(String text) {
         Matcher matcher = PATTERN.matcher(text);
-        if (!matcher.matches()) {
-            return false;
-        }
-        return true;
+        return matcher.matches();
     }
 
     /*
@@ -107,19 +104,28 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
        return NotificationTask - created object
     */
     private NotificationTask ParseMessageTextAndCreateNotificationTask(Message message) {
+        LocalDateTime localDateTime = null;
         String text = message.text();
         Matcher matcher = PATTERN.matcher(text);
+
         String date = null;
         String task = null;
         if (matcher.matches()) {
             date = matcher.group(1);
             task = matcher.group(3);
         }
-        LocalDateTime localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+        try {
+            localDateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+        }
+        catch (DateTimeParseException e){
+            logger.error("Incorrect input date", message);
+        }
+
         NotificationTask notificationTask = new NotificationTask();
         notificationTask.setNotificationDate(localDateTime);
         notificationTask.setText(task);
         notificationTask.setIdChat(message.chat().id());
+
         return notificationTask;
     }
 
@@ -130,8 +136,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     */
     @Scheduled(cron = "0 0/1 * * * *")
     private void executeNotificationTaskOnScheduledTime() {
-        if (!notificationTaskService
-                .getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)).isEmpty()) {
+        if (!notificationTaskService.getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)).isEmpty()) {
             notificationTaskService
                     .getNotificationTasksByDate(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
                     .stream()
